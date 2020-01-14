@@ -1,0 +1,12 @@
+{
+  "name": "@interwebs/webrtc-messages",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^3.7.4"
+  },
+  "scripts": {
+    "build": "tsc -p ."
+  }
+}

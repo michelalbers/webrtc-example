@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "target": "ES5",
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "noEmit": true,
+        "allowJs": true,
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "strict": true,
+        "forceConsistentCasingInFileNames": true
+    }
+}
