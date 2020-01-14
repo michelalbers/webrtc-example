@@ -11,7 +11,8 @@
     "@interwebs/webrtc-messages": "*"
   },
   "scripts": {
-      "dev": "ts-node-dev src/index.ts"
+      "dev": "ts-node-dev src/index.ts",
+      "build": "tsc -p ."
   },
   "devDependencies": {
     "@types/express": "^4.17.2",

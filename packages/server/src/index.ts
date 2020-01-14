@@ -1,7 +1,7 @@
 import { MessageToServer, MessageType, PresenterQueryResponse, PresenterRequestResponse, RemoteICECandidate, RemoteSDP, ClientId } from '@interwebs/webrtc-messages/dist/index';
 import { get, set } from 'lodash';
-import uuid from 'uuid';
-import WebSocket from 'ws';
+import * as uuid from 'uuid';
+import * as WebSocket from 'ws';
 
 const wss = new WebSocket.Server({
     port: Number(process.env.WS_PORT) || 8080,
@@ -29,14 +29,14 @@ wss.on('listening', () => {
 wss.on('connection', (ws) => {
     const userId = uuid();
 
+    // @ts-ignore
     store.connections = store.connections.concat(ws);
     set(store, `${userId}.wsConnection`, ws);
 
     const initialMessage: ClientId = {
         type: MessageType.ClientId,
         payload: {
-            clientId: userId,
-        },
+            clientId: userId, },
     };
 
     ws.send(JSON.stringify(initialMessage));
@@ -49,7 +49,6 @@ wss.on('connection', (ws) => {
                 const currentPresenterId = get(store, 'presenter.clientId');
                 if (currentPresenterId === userId) {
                     delete store.presenter?.clientId;
-                    set(store, 'presenter.clientId', undefined);
 
                     const messageForBroadcast: PresenterQueryResponse = {
                         type: MessageType.PresenterQueryResponse,
@@ -57,8 +56,7 @@ wss.on('connection', (ws) => {
                     };
 
                     broadcastMessage(JSON.stringify(messageForBroadcast));
-                }
-                break;
+                } break;
             }
 
             case MessageType.LocalICECandidate: {
@@ -146,19 +144,23 @@ wss.on('connection', (ws) => {
         }
     });
 
-    ws.on('close', () => {
+    const closeOrErrorCallback = () => {
         const index = store.connections.indexOf(ws);
         store.connections.splice(index, 1);
         const presenterId = get(store, 'presenter.clientId');
         if (presenterId === userId) {
-            set(store, 'presenter.clientId', undefined);
+            delete store.presenter.clientId;
             const messageForBroadcast: PresenterQueryResponse = {
                 type: MessageType.PresenterQueryResponse,
                 payload: {},
             };
             broadcastMessage(JSON.stringify(messageForBroadcast));
         }
-        set(store, `${userId}.wsConnection`, undefined);
-    });
+        delete store[userId].wsConnection;
+    }
+    
+    ws.on('error', () => closeOrErrorCallback());
+
+    ws.on('close', () => closeOrErrorCallback());
 });
 

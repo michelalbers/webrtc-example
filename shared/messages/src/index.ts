@@ -45,7 +45,7 @@ export type PresenterRequestResponse = {
     }
 }
 
-export type LocalSPD = {
+export type LocalSDP = {
     type: MessageType.LocalSDP;
     payload: {
         forClientId: string;
@@ -77,5 +77,5 @@ export type RemoteICECandidate = {
     };
 };
 
-export type MessageToServer = PresenterQuery | PresenterRequest | LocalICECandidate | LocalSPD | StopPresenter;
+export type MessageToServer = PresenterQuery | PresenterRequest | LocalICECandidate | LocalSDP | StopPresenter;
 export type MessageFromServer = RemoteICECandidate | RemoteSDP | PresenterQueryResponse | PresenterRequestResponse | ClientId;

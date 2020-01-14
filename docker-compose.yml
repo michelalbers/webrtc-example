@@ -1,0 +1,44 @@
+version: "3"
+
+services:
+
+  client:
+    container_name: "webrtc-example-client"
+    environment:
+      - REACT_APP_WS_URL=wss://rtcws.interwebs-ug.de
+      - REACT_APP_TURN_SERVER_URL=turn:88.198.25.126:3478
+      - REACT_APP_TURN_SERVER_USERNAME=william
+      - REACT_APP_TURN_SERVER_PASSWORD=turner
+    networks:
+      - proxy
+    build:
+      context: .
+      dockerfile: packages/client/Dockerfile
+    labels:
+      - "traefik.http.routers.rtcclient.rule=Host(`rtc.interwebs-ug.de`)"
+      - "traefik.http.services.rtcclient-service.loadbalancer.server.port=8080"
+      - "traefik.http.routers.rtcclient.service=rtcclient-service@docker"
+      - "traefik.http.routers.rtcclient.entrypoints=https"
+      - "traefik.http.routers.rtcclient.tls.certresolver=interwebs"
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+
+  server:
+    container_name: "webrtc-example-server"
+    networks:
+      - proxy
+    build:
+      context: .
+      dockerfile: packages/server/Dockerfile
+    labels:
+      - "traefik.http.routers.rtcserver.rule=Host(`rtcws.interwebs-ug.de`)"
+      - "traefik.http.services.rtcserver-service.loadbalancer.server.port=8080"
+      - "traefik.http.routers.rtcserver.service=rtcserver-service@docker"
+      - "traefik.http.routers.rtcserver.entrypoints=https"
+      - "traefik.http.routers.rtcserver.tls.certresolver=interwebs"
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+
+networks:
+  proxy:
+    external: true
