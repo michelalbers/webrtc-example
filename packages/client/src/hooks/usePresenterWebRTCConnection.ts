@@ -1,7 +1,6 @@
 import { LocalICECandidate, LocalSDP, MessageFromServer, MessageType, StopPresenter } from "@interwebs/webrtc-messages";
 import { useRef, useState } from "react";
 import { createPeerConnection } from "../lib/webRTCConnection";
-import get from 'lodash';
 
 export default () => {
     const peerConnections = useRef<{ [key: string]: RTCPeerConnection }>({});
@@ -44,7 +43,8 @@ export default () => {
                             }
 
                             case 'disconnected': {
-
+                                delete iceCandidateQueue[clientId];
+                                delete peerConnections.current[clientId];
                                 break;
                             }
 
@@ -86,8 +86,21 @@ export default () => {
                             sdp,
                         });
 
+                        if (iceCandidateQueue[clientId]) {
+                            while (iceCandidateQueue[clientId].length) {
+                                const iceCandidate = iceCandidateQueue[clientId].shift();
+                                try {
+                                    await peerConnection.addIceCandidate(iceCandidate as RTCIceCandidateInit);
+                                } catch (err) {
+                                    onError(err);
+                                }
+                            }
+                        }
+
                         const answer = await peerConnection.createAnswer();
+
                         await peerConnection.setLocalDescription({ sdp: answer.sdp, type: 'answer' });
+
                         const message: LocalSDP = {
                             type: MessageType.LocalSDP,
                             payload: {
@@ -95,6 +108,7 @@ export default () => {
                                 sdp: answer.sdp as string,
                             }
                         }
+
                         wsConnection.send(JSON.stringify(message));
                     } catch (err) {
                         onError(err);
