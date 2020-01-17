@@ -1,11 +1,13 @@
 import { LocalICECandidate, LocalSDP, MessageFromServer, MessageType, StopPresenter } from "@interwebs/webrtc-messages";
 import { useRef, useState } from "react";
 import { createPeerConnection } from "../lib/webRTCConnection";
+import get from 'lodash';
 
 export default () => {
     const peerConnections = useRef<{ [key: string]: RTCPeerConnection }>({});
     const [error, setError] = useState<Error>();
     const [clientMediaStreams, setClientMediaStreams] = useState<MediaStream[]>([]);
+    const iceCandidateQueue: { [key: string]: RTCIceCandidateInit[] } = {};
 
     const disconnectAllClients = () => {
         for (const clientId in peerConnections.current) {
@@ -30,6 +32,7 @@ export default () => {
                     const { clientId, sdp } = parsedMessage.payload;
                     const peerConnection = createPeerConnection(mediaStream);
                     const remoteStream = new MediaStream();
+
                     peerConnections.current[clientId] = peerConnection;
 
                     peerConnection.oniceconnectionstatechange = (ev) => {
@@ -37,6 +40,11 @@ export default () => {
                             case 'completed':
                             case 'connected': {
                                 setClientMediaStreams((streams) => streams.concat(remoteStream));
+                                break;
+                            }
+
+                            case 'disconnected': {
+
                                 break;
                             }
 
@@ -100,7 +108,14 @@ export default () => {
                     const peerConnection = peerConnections.current[clientId];
 
                     if (!peerConnection) {
-                        setError(new Error(`Peer Connection for Client Id ${clientId} is not present`));
+                        onError(new Error(`Peer Connection for Client Id ${clientId} is not present`));
+                        return;
+                    }
+
+                    if (!peerConnection.remoteDescription) {
+                        const queue = iceCandidateQueue[clientId] || [];
+                        queue.push(iceCandidate);
+                        iceCandidateQueue[clientId] = queue;
                         return;
                     }
 
