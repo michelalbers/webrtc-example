@@ -14,7 +14,11 @@ export default (wsConnection?: WebSocket) => {
     const [error, setError] = useState<Error>();
     const [connectionStatus, setConnectionStatus] = useState(ConnectionStatus.Disconnected);
 
-    const onError = (err: Error) => {
+    const onError = (err: Error, context?: string) => {
+        if (context) {
+            console.error(`Error in ${context}`);
+        }
+        console.error(err);
         setError(err);
         setRemoteMediaStream(undefined);
         cleanUpRTCConnection();
@@ -48,7 +52,7 @@ export default (wsConnection?: WebSocket) => {
                     try {
                         await peerConnection.current?.addIceCandidate(iceCandidate);
                     } catch (err) {
-                        onError(err);
+                        onError(err, 'websocketMessageCallback -> MessageType.RemoteICECandidate (:55)');
                     }
                 } else {
                     iceCandidateQueue.push(iceCandidate);
@@ -60,16 +64,21 @@ export default (wsConnection?: WebSocket) => {
                 const { sdp } = parsedMessage.payload;
 
                 try {
+                    console.log(peerConnection.current?.signalingState);
                     await peerConnection.current?.setRemoteDescription(new RTCSessionDescription({
                         sdp,
                         type: 'answer',
                     }));
                     while (iceCandidateQueue.length) {
-                        const iceCandidate = iceCandidateQueue.shift();
-                        if (iceCandidate) peerConnection.current?.addIceCandidate(iceCandidate);
+                        const iceCandidate = iceCandidateQueue.shift() as RTCIceCandidateInit;
+                        try {
+                            await peerConnection.current?.addIceCandidate(iceCandidate);
+                        } catch (err) {
+                            onError(err, 'websocketMessageCallback -> MessageType.RemoteSDPAnswer -> iceCandidateQueueLoop (:76)')
+                        }
                     }
                 } catch (err) {
-                    onError(err);
+                    onError(err, 'websocketMessageCallback -> MessageType.RemoteSDPAnswer (:80)');
                 }
 
                 break;
@@ -150,7 +159,7 @@ export default (wsConnection?: WebSocket) => {
 
             wsConnection.send(JSON.stringify(message));
         } catch (err) {
-            onError(err);
+            onError(err, 'startWatching -> createOffer / setLocalDescription (:157)');
             onStopWatching();
         }
 

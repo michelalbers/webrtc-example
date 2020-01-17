@@ -17,7 +17,11 @@ export default () => {
         setClientMediaStreams([]);
     }
 
-    const onError = (err: Error) => {
+    const onError = (err: Error, context?: string) => {
+        if (context) {
+            console.error(`Error in ${context}`);
+        }
+        console.error(err);
         setError(err);
         disconnectAllClients();
     }
@@ -92,7 +96,7 @@ export default () => {
                                 try {
                                     await peerConnection.addIceCandidate(iceCandidate as RTCIceCandidateInit);
                                 } catch (err) {
-                                    onError(err);
+                                    onError(err, 'startPresenting -> MessageType.RemoteSDPOffer -> setRemoteDescription -> addIceCandidate (:88)');
                                 }
                             }
                         }
@@ -111,7 +115,7 @@ export default () => {
 
                         wsConnection.send(JSON.stringify(message));
                     } catch (err) {
-                        onError(err);
+                        onError(err, 'startPresenting -> MessageType.RemoteSDPOffer -> setRemoteDescription (:118)');
                     }
 
                     break;
@@ -122,7 +126,7 @@ export default () => {
                     const peerConnection = peerConnections.current[clientId];
 
                     if (!peerConnection) {
-                        onError(new Error(`Peer Connection for Client Id ${clientId} is not present`));
+                        onError(new Error(`Peer Connection for Client Id ${clientId} is not present`), 'startPresenting -> MessageType.RemoteICECandidate (:129)');
                         return;
                     }
 
@@ -136,7 +140,7 @@ export default () => {
                     try {
                         await peerConnection.addIceCandidate(iceCandidate)
                     } catch (err) {
-                        onError(err);
+                        onError(err, 'startPresenting -> MessageType.RemoteIceCandidate -> addIceCandidate (:143)');
                     }
 
                     break;
