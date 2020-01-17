@@ -45,7 +45,11 @@ export default (wsConnection?: WebSocket) => {
             case MessageType.RemoteICECandidate: {
                 const { iceCandidate } = parsedMessage.payload;
                 if (peerConnection.current?.remoteDescription) {
-                    peerConnection.current?.addIceCandidate(iceCandidate);
+                    try {
+                        await peerConnection.current?.addIceCandidate(iceCandidate);
+                    } catch (err) {
+                        onError(err);
+                    }
                 } else {
                     iceCandidateQueue.push(iceCandidate);
                 }
