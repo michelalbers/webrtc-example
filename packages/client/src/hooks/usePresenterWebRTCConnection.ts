@@ -49,7 +49,6 @@ export default () => {
                             case 'disconnected': {
                                 delete iceCandidateQueue[clientId];
                                 delete peerConnections.current[clientId];
-                                break;
                             }
 
                             default: {

@@ -50,8 +50,6 @@ wss.on('connection', (ws) => {
                 if (currentPresenterId === userId) {
                     delete store.presenter.clientId;
 
-                    console.log(store);
-
                     const messageForBroadcast: PresenterQueryResponse = {
                         type: MessageType.PresenterQueryResponse,
                         payload: {},
