@@ -31,9 +31,10 @@ export default (wsConnection?: WebSocket) => {
         peerConnection.current = undefined;
 
         setRemoteMediaStream(undefined);
+        setConnectionStatus(ConnectionStatus.Disconnected);
     }
 
-    const websocketMessageCallback = async (ev: MessageEvent) => {
+    async function websocketMessageCallback(this: WebSocket, ev: MessageEvent) {
         const parsedMessage = JSON.parse(ev.data as string) as MessageFromServer;
         const iceCandidateQueue: RTCIceCandidateInit[] = [];
 
@@ -42,6 +43,7 @@ export default (wsConnection?: WebSocket) => {
                 const { clientId } = parsedMessage.payload;
                 if (!clientId) {
                     cleanUpRTCConnection();
+                    this.removeEventListener('message', websocketMessageCallback);
                 }
                 break;
             }
@@ -52,6 +54,7 @@ export default (wsConnection?: WebSocket) => {
                     try {
                         await peerConnection.current?.addIceCandidate(iceCandidate);
                     } catch (err) {
+                        this.removeEventListener('message', websocketMessageCallback);
                         onError(err, 'websocketMessageCallback -> MessageType.RemoteICECandidate (:55)');
                     }
                 } else {
@@ -74,10 +77,12 @@ export default (wsConnection?: WebSocket) => {
                         try {
                             await peerConnection.current?.addIceCandidate(iceCandidate);
                         } catch (err) {
+                            this.removeEventListener('message', websocketMessageCallback);
                             onError(err, 'websocketMessageCallback -> MessageType.RemoteSDPAnswer -> iceCandidateQueueLoop (:76)')
                         }
                     }
                 } catch (err) {
+                    this.removeEventListener('message', websocketMessageCallback);
                     onError(err, 'websocketMessageCallback -> MessageType.RemoteSDPAnswer (:80)');
                 }
 
@@ -90,13 +95,13 @@ export default (wsConnection?: WebSocket) => {
         if (!wsConnection) return;
         cleanUpRTCConnection();
         peerConnection.current = createPeerConnection(mediaStream);
-        wsConnection.addEventListener('message', websocketMessageCallback);
 
         const onStopWatching = () => {
-            setConnectionStatus(ConnectionStatus.Disconnected);
             cleanUpRTCConnection();
             wsConnection?.removeEventListener('message', websocketMessageCallback);
         };
+
+        wsConnection.addEventListener('message', websocketMessageCallback);
 
         peerConnection.current.ontrack = (ev) => {
             const stream = new MediaStream();
