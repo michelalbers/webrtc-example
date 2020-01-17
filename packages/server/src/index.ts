@@ -146,8 +146,12 @@ wss.on('connection', (ws) => {
 
     const closeOrErrorCallback = () => {
         const index = store.connections.indexOf(ws);
-        store.connections.splice(index, 1);
+        if (index > -1) {
+            store.connections.splice(index, 1);
+        }
+
         const presenterId = get(store, 'presenter.clientId');
+
         if (presenterId === userId) {
             delete store.presenter.clientId;
             const messageForBroadcast: PresenterQueryResponse = {
@@ -156,7 +160,10 @@ wss.on('connection', (ws) => {
             };
             broadcastMessage(JSON.stringify(messageForBroadcast));
         }
-        delete store[userId].wsConnection;
+
+        if (store[userId]) {
+            delete store[userId];
+        }
     }
     
     ws.on('error', () => closeOrErrorCallback());
